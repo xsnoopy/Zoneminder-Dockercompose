@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  distro:
+    image: ubuntu:latest
+    restart: always
+    container_name: ubuntuzoneminder
+    volumes:
+      - /dev/dri:/dev/dri
+      - "/etc/localtime:/etc/localtime:ro"
+    command: >
+      sh -c "apt  update &&
+             apt  upgrade -y  &&
+             apt install software-properties-common -y &&
+             add-apt-repository ppa:iconnor/zoneminder-1.36 -y &&
+             apt update &&
+             apt upgrade -y &&
+             apt install zoneminder -y &&
+             a2enmod cgi &&
+             apt clean &&
+             echo 'date.timezone = "America/New_York"' >> /etc/php/7.4/apache2/php.ini &&
+             a2enmod rewrite &&
+             a2enconf zoneminder &&
+             a2enmod expires &&
+             a2enmod headers &&
+             service mysql start &&
+             service apache2 start &&
+             service zoneminder start &&
+             tail -f /var/log/zm/zmdc.log
+             tail -f /dev/null
+             "
+
+    ports:
+      - 7878:80
+    networks:
+      - home
+    privileged: true
+    shm_size: 4g
+    environment:
+       - TZ=America/New_York
+    volumes:
+       - events:/var/cache/zoneminder/events
+       - images:/var/cache/zoneminder/images
+       - mysql:/var/lib/mysql
+       - logs:/var/log/zoneminder
+
+volumes:
+  events:
+  images:
+  mysql:
+  logs:
+
+networks:
+  home:
+    external:
+      name: home
